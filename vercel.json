@@ -1,5 +1,0 @@
-{
-  "framework": "vite",
-  "rootDirectory": "client",
-  "installCommand": "npm install --legacy-peer-deps"
-}
