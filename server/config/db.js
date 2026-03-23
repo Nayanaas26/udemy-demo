@@ -1,25 +1,52 @@
 const mongoose = require('mongoose');
 
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
-    try {
-        let uri = process.env.MONGO_URI;
-        try {
-            await mongoose.connect(uri, { serverSelectionTimeoutMS: 2000 });
-            console.log('MongoDB connected');
-        } catch (initialError) {
-            console.log('Local MongoDB not running, starting in-memory database...');
-            const { MongoMemoryServer } = require('mongodb-memory-server');
-            const mongoServer = await MongoMemoryServer.create();
-            uri = mongoServer.getUri();
-            await mongoose.connect(uri);
-            console.log('In-memory MongoDB connected successfully');
-            const seedData = require('./seedDb');
-            await seedData();
-        }
-    } catch (error) {
-        console.error('MongoDB connection error:', error.message);
-        process.exit(1);
+    // Check if we are already connected
+    if (mongoose.connection.readyState === 1) {
+        console.log('Using existing MongoDB connection');
+        return mongoose.connection;
     }
+
+    if (!cached.promise) {
+        const uri = process.env.MONGODB_URI;
+        if (!uri) {
+             throw new Error('MONGODB_URI is not defined in environment variables');
+        }
+
+        console.log('Attempting new MongoDB connection...');
+        
+        const opts = {
+            serverSelectionTimeoutMS: 5000, // Fail fast if can't connect
+            connectTimeoutMS: 10000,
+        };
+
+        cached.promise = mongoose.connect(uri, opts).then((mongoose) => {
+            console.log('✅ MongoDB Connected Successfully');
+            return mongoose;
+        }).catch(err => {
+            console.error('❌ MongoDB Connection Promise Rejected:', err.message);
+            cached.promise = null; // Reset for next attempt
+            throw err;
+        });
+    }
+
+    try {
+        cached.conn = await cached.promise;
+    } catch (e) {
+        cached.promise = null;
+        console.error('❌ Database connection error:', e.message);
+        throw e;
+    }
+
+    return cached.conn;
 };
 
 module.exports = connectDB;
+
+
+

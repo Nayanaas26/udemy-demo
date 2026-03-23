@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import ChatWidget from './components/ChatWidget';
 import Home from './pages/Home';
 import Courses from './pages/Courses';
 import CourseDetails from './pages/CourseDetails';
@@ -12,8 +13,9 @@ import InstructorDashboard from './pages/InstructorDashboard';
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans">
+      <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans relative">
         <Navbar />
+        <ChatWidget />
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
